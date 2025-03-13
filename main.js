@@ -18,22 +18,27 @@ function sendMessage(){
     btnSubmit.style.cursor = 'not-allowed'
     message.disabled = true
 
-    fetch("https://api.deepseek.com/chat/completions", {
+    fetch("http://localhost:11434/api/generate", {
        method: 'POST',
        headers: {
         Accept: "application/json",
-        "Contet-Type": "application/json",
+        "Content-Type": "application/json",
         Authorization: 'bearer ${apiKey}'
        },
        body: JSON.stringify({
-        model: "DeepSeek-V3",
-        messages: message.value,
+           model: "deepseek-r1:8b",
+           prompt: message.value,
+           stream: false,
         max_tokens: 2048,
         temperature: 1.0,
        })
     })
     .then((response) => response.json())
-    .then((resoonse) => {
-        console.log(response)
+    .then((response) => {
+
+        const regex = /<think>[\s\S]*?<\/think>/g;
+        const textoSemThink = response.response.replace(regex, ''); 
+
+        console.log(textoSemThink.trim());
     })
 }
