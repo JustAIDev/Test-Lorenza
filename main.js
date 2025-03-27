@@ -38,7 +38,42 @@ function sendMessage(){
 
         const regex = /<think>[\s\S]*?<\/think>/g;
         const textoSemThink = response.response.replace(regex, ''); 
-
         console.log(textoSemThink.trim());
+
+        let r = textoSemThink.trim()
+        showHistoric(message.value,r)
     })
+    .catch((e) => {
+        console.log('Error -> ',e)
+    })
+    .finally(() => {
+        btnSubmit.disabled = false
+        btnSubmit.style.cursor = 'pointer'
+        message.disabled = false
+    })
+}
+
+function showHistoric(message, response){
+    var historic = document.getElementById('historic')
+    //My messages
+    var boxMyMessage = document.createElement('div')
+    boxMyMessage.className = 'box-my-message'
+
+    var myMessage = document.createElement('p')
+    myMessage.className = 'my-message'
+    myMessage.innerHTML = message
+
+    boxMyMessage.appendChild(myMessage)
+    historic.appendChild(boxMyMessage)
+
+    //Response messages
+    var boxResponseMessage = document.createElement('div')
+    boxResponseMessage.className = 'box-response-message'
+
+    var chatResponse = document.createElement('p')
+    chatResponse.className = 'chat-message'
+    chatResponse.innerHTML = response
+
+    boxResponseMessage.appendChild(chatResponse)
+    historic.appendChild(boxResponseMessage)
 }
