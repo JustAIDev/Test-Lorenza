@@ -13,6 +13,8 @@ function sendMessage(){
     //Configuração de Status
     var status = document.getElementById('status')
     var btnSubmit = document.getElementById('btn-submit')
+
+    status.style.display = 'block'
     status.innerHTML = 'Carregando...'
     btnSubmit.disabled = true
     btnSubmit.style.cursor = 'not-allowed'
@@ -41,6 +43,7 @@ function sendMessage(){
         console.log(textoSemThink.trim());
 
         let r = textoSemThink.trim()
+        status.style.display = 'none'
         showHistoric(message.value,r)
     })
     .catch((e) => {
@@ -76,4 +79,7 @@ function showHistoric(message, response){
 
     boxResponseMessage.appendChild(chatResponse)
     historic.appendChild(boxResponseMessage)
+
+    //levar scroll para o final
+    historic.scrollTop = historic.scrollHeight
 }

@@ -72,9 +72,29 @@ input{
 }
 
 .box-my-message{
-    text-align: right;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .box-response-message{
+    display: flex;
+    justify-content: flex-start;
+}
+
+.my-message{
+    text-align: right;
+    background-color: var(--dark_purple);
+}
+
+.chat-message{
     text-align: left;
+    background-color: var(--light_purple);
+}
+
+.my-message,
+.chat-message{
+    border-radius: 10px;
+    padding: 1rem;
+    color: var(--white);
+    margin: 0;
 }
