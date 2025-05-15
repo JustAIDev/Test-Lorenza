@@ -1,4 +1,4 @@
-const apiKey = "sk-e6a8fcc552834287ab2b7d88b172b5a3";
+const apiKey = "";
 
 function sendMessage() {
     var message = document.getElementById('message-input');
@@ -9,7 +9,6 @@ function sendMessage() {
 
     message.style.border = 'none';
 
-    // Configuração de Status
     var status = document.getElementById('status');
     var btnSubmit = document.getElementById('btn-submit');
 
@@ -19,19 +18,19 @@ function sendMessage() {
     btnSubmit.style.cursor = 'not-allowed';
     message.disabled = true;
 
-    fetch("http://localhost:11434/api/chat", {
+    fetch("https://api.deepseek.com/chat/completions", {
         method: 'POST',
         headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
-            Authorization: `bearer ${apiKey}`
+            Authorization: `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-            model: "deepseek-r1",
+            model: "deepseek-chat",
             messages: [
                 {
                     role: "system",
-                    content: "You are a consumer rights assistant that replies in Portuguese. You help users understand laws by explaining them in a simple and accessible way."
+                    content: "Analise a seguinte pergunta e responda com base exclusivamente no Código de Defesa do Consumidor (Lei nº 8.078/1990). Se a pergunta não estiver relacionada ao CDC, retorne exatamente a seguinte frase: 'Desculpe, isso não está relacionado ao Código de Defesa do Consumidor.' Caso a pergunta esteja relacionada ao CDC, forneça uma resposta completa e detalhada, com base na legislação consumerista. Após a análise, oriente o consumidor sobre os próximos passos, sugerindo que ele tente resolver a situação diretamente com o estabelecimento, buscando uma solução amigável. Caso não seja possível resolver com o estabelecimento, recomende que ele faça uma reclamação no PROCON (Programa de Proteção e Defesa do Consumidor) da sua região. Se o consumidor desejar continuar com o caso ou necessitar de uma solução judicial, sugira que ele procure um advogado para avaliar as possibilidades legais. Você será uma mulher que se chama 'Ju'. Não use palavras técnicas, explique para uma pessoa sem muito conhecimento na área judicial, sendo didatica. Quando você recomendar um advogado, fale para o cliente 'Vá à aba de Advogados Parceiros', pois lá temos advogados de confiança."
                 },
                 {
                     role: "user",
@@ -41,54 +40,60 @@ function sendMessage() {
             options: {
                 temperature: 0.1
             },
-            stream: true,  // Usando stream
+            stream: true,
         })
     })
-    .then((response) => {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let done = false;
-        let text = ''; // Variável para acumular o texto
+        .then((response) => {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let done = false;
+            let text = '';
 
-        // Função para ler os dados conforme eles chegam
-        const streamData = () => {
-            reader.read().then(({ done, value }) => {
-                if (done) {
-                    // Se não houver mais dados, finalize o processo
-                    status.style.display = 'none';
-                    btnSubmit.disabled = false;
-                    btnSubmit.style.cursor = 'pointer';
-                    message.disabled = false;
-                    return;
-                }
+            // Função para ler os dados conforme eles chegam
+            const streamData = () => {
+                reader.read().then(({ done, value }) => {
+                    if (done) {
+                        status.style.display = 'none';
+                        btnSubmit.disabled = false;
+                        btnSubmit.style.cursor = 'pointer';
+                        message.disabled = false;
+                        return;
+                    }
 
-                // Decodifique o valor (em formato Uint8Array) para texto
-                const content = decoder.decode(value, { stream: true });
+                    const content = decoder.decode(value, { stream: true });
 
-                // A resposta completa da API tem a estrutura { message: { content: "text" } }
-                // Aqui extraímos o conteúdo da mensagem
-                const messageContent = extractMessageContent(content);
+                    // Cada linha da stream pode ter múltiplos "data: {json}" separados
+                    const lines = content.split('\n').filter(line => line.trim().startsWith('data:'));
 
-                // Acumule o texto em uma variável
-                text += messageContent;
+                    for (const line of lines) {
+                        const jsonStr = line.replace(/^data:\s*/, '').trim();
 
-                // Limpar o texto (se necessário) para remover tags ou caracteres indesejados
-                const cleanedText = cleanText(text);
+                        if (jsonStr === "[DONE]") continue;
 
-                // Atualize o histórico em tempo real com o texto acumulado
-                updateMessage(cleanedText);
+                        try {
+                            const parsed = JSON.parse(jsonStr);
+                            const delta = parsed.choices?.[0]?.delta;
+                            const piece = delta?.content || '';
+                            text += piece;
 
-                // Chama novamente para continuar processando os dados
-                streamData();
-            });
-        };
+                            const cleanedText = cleanText(text);
+                            updateMessage(cleanedText);
+                        } catch (e) {
+                            console.error('Erro ao parsear JSON do chunk:', e);
+                        }
+                    }
 
-        // Iniciar o fluxo de leitura
-        streamData();
-    })
-    .catch((e) => {
-        console.log('Error -> ', e);
-    });
+                    streamData(); // Continue lendo
+                });
+            };
+
+
+            // Iniciar o fluxo de leitura
+            streamData();
+        })
+        .catch((e) => {
+            console.log('Error -> ', e);
+        });
 }
 
 // Função para extrair o conteúdo da mensagem
@@ -116,22 +121,22 @@ function cleanText(text) {
 function updateMessage(content) {
     // Encontre o elemento da mensagem de resposta (ou crie se não existir)
     var historic = document.getElementById('historic');
-    
+
     let responseBox = document.getElementById('response-box');
-    
+
     if (!responseBox) {
         // Se a caixa de resposta não existir, crie uma nova
         responseBox = document.createElement('div');
         responseBox.id = 'response-box';
         responseBox.className = 'box-response-message';
-        
+
         var chatResponse = document.createElement('p');
         chatResponse.className = 'chat-message';
         responseBox.appendChild(chatResponse);
-        
+
         historic.appendChild(responseBox);
     }
-    
+
     // Atualize o conteúdo da mensagem
     var chatResponse = responseBox.querySelector('.chat-message');
     chatResponse.innerHTML = content;
